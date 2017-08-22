@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import io.reactivex.functions.Predicate;
+import io.reactivex.subscribers.TestSubscriber;
 
 /**
  * Test the implementation of {@link UserDao}
@@ -63,6 +64,40 @@ public class UserDaoTest {
         mDatabase.userDao().getUser()
                 .test()
                 .assertNoValues();
+    }
+
+    @Test
+    public void testFlowable() {
+        // When subscribing to the emissions of the user
+        final TestSubscriber<User> userTestSubscriber = mDatabase.userDao().getUser().test();
+
+        userTestSubscriber.assertValueCount(0);
+
+        // When inserting a new user in the data source
+        mDatabase.userDao().insertUser(USER);
+
+        userTestSubscriber.assertValueCount(1);
+    }
+
+
+    @Test
+    public void testFlowableInTransaction() {
+        // When subscribing to the emissions of the user
+        final TestSubscriber<User> userTestSubscriber = mDatabase.userDao().getUser().test();
+
+        userTestSubscriber.assertValueCount(0);
+
+        // When inserting a new user in the data source
+        mDatabase.beginTransaction();
+        try {
+            mDatabase.userDao().insertUser(USER);
+            mDatabase.setTransactionSuccessful();
+
+        } finally {
+            mDatabase.endTransaction();
+        }
+
+        userTestSubscriber.assertValueCount(1);
     }
 
     @Test
